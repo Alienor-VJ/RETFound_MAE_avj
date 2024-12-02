@@ -70,3 +70,16 @@ def run_one_image(img, model):
     show_image(im_paste[0], "reconstruction + visible")
 
     plt.show()
+
+
+def compute_embedding(img, model, device=torch.device('cuda')):
+    
+    x = torch.tensor(img)
+    x = x.unsqueeze(dim=0)
+    x = torch.einsum('nhwc->nchw', x)
+    
+    x = x.to(device, non_blocking=True)
+    latent = model.forward_features(x.float())
+    latent = torch.squeeze(latent)
+    
+    return latent
