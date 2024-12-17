@@ -29,8 +29,8 @@ Keras version implemented by Yuka Kihara can be found [here](https://github.com/
 1. Create environment with conda:
 
 ```
-conda create -n retfound python=3.7.5 -y
-conda activate retfound
+conda create -n retfoundAVJ python=3.10.12 -y
+conda activate retfoundAVJ
 ```
 
 2. Install dependencies
@@ -91,11 +91,7 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_f
     --epochs 50 \
     --blr 5e-3 --layer_decay 0.65 \
     --weight_decay 0.05 --drop_path 0.2 \
-    --nb_classes 5 \
-    --data_path ./IDRiD_data/ \
-    --task ./finetune_IDRiD/ \
-    --finetune ./RETFound_cfp_weights.pth \
-    --input_size 224
+    --nb_classes 3     --data_path ./pic/     --task ./finetune_IDRiD/ --finetune ./RETFound_cfp_weights.pth --input_size 224
 
 ```
 
