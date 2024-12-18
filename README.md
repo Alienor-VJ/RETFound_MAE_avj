@@ -35,10 +35,9 @@ conda activate retfoundAVJ
 
 2. Install dependencies
 
-## no need for the next first 2 lines 
 ```
-git clone https://github.com/rmaphoh/RETFound_MAE/ 
-cd RETFound_MAE
+git clone https://github.com/Alienor-VJ/RETFound_MAE_avj.git
+cd RETFound_MAE_avj
 
 pip install -r requirement.txt
 ```
