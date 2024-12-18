@@ -35,9 +35,11 @@ conda activate retfoundAVJ
 
 2. Install dependencies
 
+## no need for the next first 2 lines 
 ```
-git clone https://github.com/rmaphoh/RETFound_MAE/
+git clone https://github.com/rmaphoh/RETFound_MAE/ 
 cd RETFound_MAE
+
 pip install -r requirement.txt
 ```
 
@@ -85,7 +87,7 @@ To fine tune RETFound on your own data, follow these steps:
 
 ```
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_finetune.py \
-    --batch_size 16 \
+    --batch_size 4 \
     --world_size 1 \
     --model vit_large_patch16 \
     --epochs 50 \
@@ -101,7 +103,7 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_f
 
 ```
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_finetune.py \
-    --eval --batch_size 16 \
+    --eval --batch_size 4 \
     --world_size 1 \
     --model vit_large_patch16 \
     --epochs 50 \
@@ -122,7 +124,7 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_f
 import torch
 import models_vit
 from util.pos_embed import interpolate_pos_embed
-from timm.models.layers import trunc_normal_
+from timm.layers import trunc_normal_
 
 # call the model
 model = models_vit.__dict__['vit_large_patch16'](
