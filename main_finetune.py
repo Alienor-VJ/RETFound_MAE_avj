@@ -27,6 +27,7 @@ import util.misc as misc
 from util.datasets import build_dataset
 from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
+from util.misc import DummyScaler
 
 import models_vit
 
@@ -108,7 +109,7 @@ def get_args_parser():
     parser.add_argument('--task', default='',type=str,
                         help='finetune from checkpoint')
     parser.add_argument('--global_pool', action='store_true')
-    parser.set_defaults(global_pool='token')
+    parser.set_defaults(global_pool='')
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
                         help='Use class token instead of global pool for classification')
 
@@ -271,7 +272,7 @@ def main(args):
         # manually initialize fc layer
         trunc_normal_(model.head.weight, std=2e-5)
 
-    model.to('mps')
+    model.to(args.device)
 
     model_without_ddp = model
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -300,7 +301,7 @@ def main(args):
         layer_decay=args.layer_decay
     )
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr)
-    loss_scaler = NativeScaler()
+    loss_scaler = DummyScaler()
 
     if mixup_fn is not None:
         # smoothing is handled with mixup label transform
