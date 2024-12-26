@@ -109,7 +109,7 @@ def get_args_parser():
     parser.add_argument('--task', default='',type=str,
                         help='finetune from checkpoint')
     parser.add_argument('--global_pool', action='store_true')
-    parser.set_defaults(global_pool='token')
+    parser.set_defaults(global_pool='')
     parser.add_argument('--cls_token', action='store_false', dest='global_pool',
                         help='Use class token instead of global pool for classification')
 
