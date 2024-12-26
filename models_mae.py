@@ -65,8 +65,7 @@ class MaskedAutoencoderViT(nn.Module):
 
         # initialize patch_embed like nn.Linear (instead of nn.Conv2d)
         w = self.patch_embed.proj.weight.data
-        w = w.contiguous()  # Make it contiguous if not
-        torch.nn.init.xavier_uniform_(w.reshape([w.shape[0], -1]))
+        torch.nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
 
         # timm's trunc_normal_(std=.02) is effectively normal_(std=0.02) as cutoff is too big (2.)
         torch.nn.init.normal_(self.cls_token, std=.02)
