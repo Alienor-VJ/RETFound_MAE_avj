@@ -27,6 +27,7 @@ import util.misc as misc
 from util.datasets import build_dataset
 from util.pos_embed import interpolate_pos_embed
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
+from util.misc import DummyScaler
 
 import models_vit
 
@@ -300,7 +301,7 @@ def main(args):
         layer_decay=args.layer_decay
     )
     optimizer = torch.optim.AdamW(param_groups, lr=args.lr)
-    loss_scaler = NativeScaler()
+    loss_scaler = DummyScaler()
 
     if mixup_fn is not None:
         # smoothing is handled with mixup label transform
