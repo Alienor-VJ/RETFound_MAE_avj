@@ -1,17 +1,18 @@
 --find-links https://download.pytorch.org/whl/torch_stable.html
-numpy==2.2.0
-torch==2.5.1
-torchvision==0.20.1
-torchaudio==2.5.1
+numpy==1.26.4
+torch==2.2
+torchvision==0.17.0
+torchaudio==2.2.0
 opencv-python==4.10.0.84
 pandas==2.2.3
 Pillow==11.0.0
-protobuf==5.29.1
+protobuf==5.29.2
 pycm==4.1
 pydicom==3.0.1
 scikit-image==0.25.0
 scikit-learn==1.6.0
 scipy==1.14.1
+tensorflow
 tensorboard==2.18.0
 tensorboard-data-server==0.7.2
 tensorboard-plugin-wit==1.8.1
