@@ -37,7 +37,7 @@ conda activate retfoundAVJ
 
 ```
 git clone https://github.com/Alienor-VJ/RETFound_MAE_avj.git
-cd RETFound_MAE_avj
+cd /Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/RETFound_MAE_avj
 
 pip install -r requirement.txt
 ```
@@ -86,18 +86,20 @@ To fine tune RETFound on your own data, follow these steps:
 
 ```
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_finetune.py \
-    --batch_size 4 \
+    --batch_size 3 \
     --world_size 1 \
     --model vit_large_patch16 \
-    --epochs 50 \
+    --epochs 10 \
     --blr 5e-3 --layer_decay 0.65 \
     --weight_decay 0.05 --drop_path 0.2 \
     --nb_classes 3     --data_path ./pic/     --task ./finetune_IDRiD/ --finetune ./RETFound_cfp_weights.pth --input_size 224
 
-```
+``` 
+4. Visualize
 
+python visualize_embed.py
 
-4. For evaluation only (download data and model checkpoints [here](BENCHMARK.md); change the path below)
+5. For evaluation only (download data and model checkpoints [here](BENCHMARK.md); change the path below)
 
 
 ```
@@ -108,8 +110,8 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_f
     --epochs 50 \
     --blr 5e-3 --layer_decay 0.65 \
     --weight_decay 0.05 --drop_path 0.2 \
-    --nb_classes 5 \
-    --data_path ./IDRiD_data/ \
+    --nb_classes 3 \
+    --data_path ./pic/ \
     --task ./internal_IDRiD/ \
     --resume ./finetune_IDRiD/checkpoint-best.pth \
     --input_size 224
@@ -127,7 +129,7 @@ from timm.layers import trunc_normal_
 
 # call the model
 model = models_vit.__dict__['vit_large_patch16'](
-    num_classes=2,
+    num_classes=3,
     drop_path_rate=0.2,
     global_pool=True,
 )
@@ -155,7 +157,6 @@ trunc_normal_(model.head.weight, std=2e-5)
 print("Model = %s" % str(model))
 ```
 
-
 ### 📃Citation
 
 If you find this repository useful, please consider citing this paper:
@@ -171,5 +172,3 @@ If you find this repository useful, please consider citing this paper:
   publisher={Nature Publishing Group UK London}
 }
 ```
-
-
