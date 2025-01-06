@@ -1,6 +1,4 @@
 --find-links https://download.pytorch.org/whl/torch_stable.html
-jupyter==1.0.0
-nb_conda_kernels==2.5.2
 numpy==1.26.4
 torch==2.2
 torchvision==0.17.0
@@ -21,3 +19,6 @@ tensorboard-plugin-wit==1.8.1
 timm==1.0.12
 tqdm==4.67.1
 fiftyone==1.1.0
+jupyter
+nb_conda_kernels
+grad-cam==1.5.4

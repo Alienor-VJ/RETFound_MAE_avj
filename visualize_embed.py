@@ -1,6 +1,6 @@
 import torch
 import sys
-sys.path.append('/Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/')
+sys.path.append('/Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/code')
 from RETFound_MAE_avj.util.notebook_utils import show_image, prepare_model, run_one_image, imagenet_std, imagenet_mean
 from torchvision import transforms
 from torchvision.utils import make_grid
@@ -13,6 +13,7 @@ import subprocess
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 from util.pos_embed import interpolate_pos_embed
 from timm.layers import trunc_normal_
+from torch.utils.tensorboard import SummaryWriter
 
 def prepare_model_for_embedding(chkpt_dir, arch='vit_large_patch16'):
     # build model
@@ -106,10 +107,29 @@ def load_patches(image_path, patch_size):
 def save_sprite_image(patches, path):
     sprite = make_grid(patches, nrow=int(np.sqrt(len(patches))), pad_value=1)
     sprite_image = Image.fromarray((sprite.permute(1, 2, 0).numpy() * 255).astype(np.uint8))
+
+    # Resize if the image exceeds max_size in any dimension
+    max_size = 1500
+    width, height = sprite_image.size
+    if max(width, height) > max_size:
+        scaling_factor = max_size / max(width, height)
+        new_width = int(width * scaling_factor)
+        new_height = int(height * scaling_factor)
+        sprite_image = sprite_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        print('sprite_image dimension',sprite_image.size)
+    
     sprite_image.save(path)
     return path
 
-model_embedding = prepare_model_for_embedding('/Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/RETFound_MAE_avj/RETFound_cfp_weights.pth', 'vit_large_patch16')
+def start_tensorboard(log_dir):
+    # Ensure the log directory exists
+    os.makedirs(log_dir, exist_ok=True)
+    # Start TensorBoard
+    subprocess.Popen(["tensorboard", "--logdir", log_dir, "--port", "6006"])
+    print("TensorBoard is running on http://localhost:6006")
+
+
+model_embedding = prepare_model_for_embedding('/Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/code/RETFound_MAE_avj/RETFound_cfp_weights.pth', 'vit_large_patch16')
 model_embedding.eval()
 print('model loaded')
 
@@ -117,74 +137,73 @@ features = {}
 images_for_viz = []  # To store the patches for the sprite image
 
 # Define the directory containing the images
-image_dir = "/Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/RETFound_MAE_avj/pic/train/birdshot_nospot/"
-uploaded = {os.path.basename(f): os.path.join(image_dir, f) for f in os.listdir(image_dir) if f.endswith(('.png', '.jpg', '.jpeg'))}
+image_dir = "/Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/code/RETFound_MAE_avj/pic/train/"
+# Load images from all subdirectories
+uploaded = {}
+for root, _, files in os.walk(image_dir):
+    for file in files:
+        if file.endswith(('.png', '.jpg', '.jpeg')):
+            full_path = os.path.join(root, file)
+            uploaded[file] = full_path
+
 print(f"Found {len(uploaded)} images.")
 
+features = {}
+images_for_viz = []  # To store the patches for the sprite image
+metadata = []  # To store metadata for the projector
+
 with torch.no_grad():
+    for name, full_path in tqdm(uploaded.items()):
+        # Extract class label from the subdirectory name
+        class_label = os.path.basename(os.path.dirname(full_path))
 
-  for name in tqdm(list(uploaded.keys())):
-      full_path = os.path.join(image_dir, name)
-      patches = load_patches(full_path, 112)
+        # Load image patches
+        patches = load_patches(full_path, 112)
 
-      images_for_viz += patches.clone().detach().cpu()  # Ensure patches are on CPU
+        # Add patches to the visualization sprite
+        images_for_viz += patches.clone().detach().cpu()
 
-      # Ensure broadcasting works correctly
-      imagenet_mean = torch.tensor(imagenet_mean).view(1, 3, 1, 1).to(patches.device)
-      imagenet_std = torch.tensor(imagenet_std).view(1, 3, 1, 1).to(patches.device)
+        # Normalize patches
+        imagenet_mean_tensor = torch.tensor(imagenet_mean).view(1, 3, 1, 1)
+        imagenet_std_tensor = torch.tensor(imagenet_std).view(1, 3, 1, 1)
+        patches = (patches - imagenet_mean_tensor) / imagenet_std_tensor
 
-      patches = patches - imagenet_mean
-      patches = patches / imagenet_std
+        # Compute embeddings for the patches
+        latent_feature = compute_embeddings(patches, model_embedding, batch_size=4)
 
-      latent_feature = compute_embeddings(patches, model_embedding, 4)
+        # Add embeddings and metadata for each patch
+        features[name] = latent_feature.detach().cpu().numpy()
+        for crop_idx in range(latent_feature.shape[0]):
+            metadata.append(f"{class_label}_patch_{crop_idx}")
 
-      features[name] = latent_feature.detach().cpu().numpy()
+    # Save the sprite image
+    sprite_path = "sprite_image.png"
+    sprite_path = save_sprite_image(images_for_viz, sprite_path)
 
-      sprite_path = "sprite_image.png"
-      sprite_path = save_sprite_image(images_for_viz, sprite_path)
+    # Create a SummaryWriter instance for TensorBoard
+    logdir = '/Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/code/RETFound_MAE_avj/tensorboard/'
+    writer = SummaryWriter(logdir)
 
-      import pandas as pd
-      from torch.utils.tensorboard import SummaryWriter
+    # Stack embeddings into a single tensor
+    embeddings = [torch.tensor(crop) for crops in features.values() for crop in crops]
+    embeddings_tensor = torch.stack(embeddings)
 
-      # Create a SummaryWriter instance
-      logdir = 'tensorboard'
-      writer = SummaryWriter(logdir)
+    print(f"Embeddings shape: {embeddings_tensor.shape}")
+    print(f"Unique metadata classes: {set(metadata)}")
+    print(f"Metadata length: {len(metadata)}")
 
-      # Convert features into a tensor and metadata for visualization
-      embeddings = []
-      metadata = []
+    # Add embeddings and metadata to TensorBoard
+    writer.add_embedding(
+        embeddings_tensor,  # Embeddings tensor
+        metadata=metadata,  # Metadata (e.g., image class labels)
+        tag="features_projector",  # Tag for the visualization
+        label_img=torch.stack([torch.tensor(im) / 255 for im in images_for_viz]),
+    )
 
-      for image_name, crops_embeddings in features.items():
-          for crop_idx, crop_embedding in enumerate(crops_embeddings):
-              embeddings.append(torch.tensor(crop_embedding))
-              metadata.append(f"{image_name}_crop_{crop_idx}")
+    # Close the writer
+    writer.close()
 
-      # Stack embeddings into a single tensor
-      embeddings_tensor = torch.stack(embeddings)
-
-      print(f"Embeddings shape: {embeddings_tensor.shape}")
-      print(f"Metadata length: {len(metadata)}")
-
-      # Add embeddings to TensorBoard projector
-      writer.add_embedding(
-          embeddings_tensor,  # Embeddings tensor
-          metadata=metadata,  # Metadata (e.g., image names)
-          tag="features_projector",  # Tag for the visualization
-          label_img=torch.stack([torch.tensor(im) / 255 for im in images_for_viz]),
-      )
-
-      # Close the writer
-      writer.close()
-
-
-      def start_tensorboard(log_dir):
-          # Ensure the log directory exists
-          os.makedirs(log_dir, exist_ok=True)
-          # Start TensorBoard
-          subprocess.Popen(["tensorboard", "--logdir", log_dir, "--port", "6006"])
-          print("TensorBoard is running on http://localhost:6006")
-
-      # Start TensorBoard
-      start_tensorboard('/Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/RETFound_MAE_avj/tensorboard/')
+    # Start TensorBoard
+    start_tensorboard(logdir)
 
       # you need to hit refresh on the tensorboard UI (top right), on the first time

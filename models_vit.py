@@ -27,21 +27,27 @@ class VisionTransformer(timm.models.vision_transformer.VisionTransformer):
 
     def forward_features(self, x):
         B = x.shape[0]
+        print(f"Input shape to forward_features: {x.shape}")  # Print the shape at the start
         x = self.patch_embed(x)
-
+        print(f"After patch_embed: {x.shape}")  # After patch embedding
         cls_tokens = self.cls_token.expand(B, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
         x = torch.cat((cls_tokens, x), dim=1)
         x = x + self.pos_embed
         x = self.pos_drop(x)
+        print(f"After position embedding and dropout: {x.shape}")  # After position embedding
 
-        for blk in self.blocks:
+        for i, blk in enumerate(self.blocks):
             x = blk(x)
+            print(f"After block {i + 1}: {x.shape}")  # After each transformer block
 
         if self.global_pool:
             x = x[:, 1:, :].mean(dim=1)  # global pool without cls token
+            print(f"After global pooling 1: {x.shape}")  # After global pooling
             outcome = self.fc_norm(x)
+            print(f"After fc norm: {outcome.shape}")
         else:
             x = self.norm(x)
+            print(f"After global pooling 2: {x.shape}")  # After global pooling
             outcome = x[:, 0]
 
         return outcome

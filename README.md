@@ -31,14 +31,19 @@ Keras version implemented by Yuka Kihara can be found [here](https://github.com/
 ```
 conda create -n retfoundAVJ python=3.10.12 -y
 conda activate retfoundAVJ
+
 ```
 
 2. Install dependencies
 
 ```
 git clone https://github.com/Alienor-VJ/RETFound_MAE_avj.git
-cd /Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/RETFound_MAE_avj
+cd /Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/code/RETFound_MAE_avj
 
+git config --global http.version HTTP/1.1
+git clone --depth 1 https://github.com/jaburke166/SLOctolyzer.git /Users/alienorvienne/Documents/Medecine/Residency/Studies/Articles/Cochin/Birdshot/code/RETFound_MAE_avj
+
+conda install -c conda-forge nb_conda_kernels
 pip install -r requirement.txt
 ```
 
@@ -48,20 +53,6 @@ pip install -r requirement.txt
 To fine tune RETFound on your own data, follow these steps:
 
 1. Download the RETFound pre-trained weights
-<table><tbody>
-<!-- START TABLE -->
-<!-- TABLE HEADER -->
-<th valign="bottom"></th>
-<th valign="bottom">ViT-Large</th>
-<!-- TABLE BODY -->
-<tr><td align="left">Colour fundus image</td>
-<td align="center"><a href="https://drive.google.com/file/d/1l62zbWUFTlp214SvK6eMwPQZAzcwoeBE/view?usp=sharing">download</a></td>
-</tr>
-<!-- TABLE BODY -->
-<tr><td align="left">OCT</td>
-<td align="center"><a href="https://drive.google.com/file/d/1m6s7QYkjyjJDlpEuXm7Xp3PmjN-elfW2/view?usp=sharing">download</a></td>
-</tr>
-</tbody></table>
 
 2. Organise your data into this directory structure (Public datasets used in this study can be [downloaded here](BENCHMARK.md))
 
@@ -92,16 +83,14 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_f
     --epochs 10 \
     --blr 5e-3 --layer_decay 0.65 \
     --weight_decay 0.05 --drop_path 0.2 \
-    --nb_classes 3     --data_path ./pic/     --task ./finetune_IDRiD/ --finetune ./RETFound_cfp_weights.pth --input_size 224
+    --nb_classes 2     --data_path ./pic/     --task ./finetune_IDRiD/ --finetune ./RETFound_cfp_weights.pth --input_size 224
 
 ``` 
 4. Visualize
 
 python visualize_embed.py
 
-5. For evaluation only (download data and model checkpoints [here](BENCHMARK.md); change the path below)
-
-
+5. For evaluation only
 ```
 python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_finetune.py \
     --eval --batch_size 4 \
@@ -110,14 +99,15 @@ python -m torch.distributed.launch --nproc_per_node=1 --master_port=48798 main_f
     --epochs 50 \
     --blr 5e-3 --layer_decay 0.65 \
     --weight_decay 0.05 --drop_path 0.2 \
-    --nb_classes 3 \
+    --nb_classes 2 \
     --data_path ./pic/ \
     --task ./internal_IDRiD/ \
     --resume ./finetune_IDRiD/checkpoint-best.pth \
     --input_size 224
-
 ```
+6. Detect spots
 
+python spot_detection.py
 
 ### Load the model and weights (if you want to call the model in your code)
 
